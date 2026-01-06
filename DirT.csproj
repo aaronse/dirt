@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>dirt</AssemblyName>
+  </PropertyGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="xcopy /Y $(TargetDir)$(TargetName).* e:\Tools\&#xD;&#xA;rem xcopy /Y $(TargetDir)$(TargetName).dll e:\Tools\&#xD;&#xA;rem xcopy /Y $(TargetDir)$(TargetName).pdb e:\Tools\&#xD;&#xA;" />
+  </Target>
+
+</Project>
