@@ -1,6 +1,6 @@
-# DirT
+# DirT(ree)
 
-**DirT (pronounced “Dir-T”) — output and token-efficient, LLM-friendly directory tree tool**
+**DirT — Displays Tree of files and subdirs.  Token-efficient LLM-friendly output.  Sensible filters by default.**
 
 DirT prints a clean, minimal directory tree optimized for:
 
