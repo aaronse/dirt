@@ -21,6 +21,7 @@ internal sealed class CliOptions
 
     public bool ShowDirs { get; private set; } = true;
     public bool ShowFiles { get; private set; } = true;
+    public bool ShowFileSize { get; private set; } = false;
 
     public OutputMode OutputMode { get; private set; } = OutputMode.Indented;
 
@@ -85,6 +86,13 @@ internal sealed class CliOptions
             {
                 o.ShowDirs = false;
                 o.ShowFiles = true;
+                i++;
+                continue;
+            }
+
+            if (a.Equals("/size", StringComparison.OrdinalIgnoreCase) || a.Equals("--size", StringComparison.OrdinalIgnoreCase))
+            {
+                o.ShowFileSize = true;
                 i++;
                 continue;
             }

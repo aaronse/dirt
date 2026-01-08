@@ -72,7 +72,8 @@ internal sealed class TreeBuilder
                         FullPath = e,
                         RelPath = IgnoreEngine.GetRelativeNormalized(e, node.FullPath),
                         IsDirectory = true,
-                        Ignored = true
+                        Ignored = true,
+                        FileSize = 0
                     });
                     if (CountLine()) { WasTruncated = true; break; }
                 }
@@ -104,7 +105,8 @@ internal sealed class TreeBuilder
                 Name = Path.GetFileName(d) + "/",
                 FullPath = d,
                 RelPath = IgnoreEngine.GetRelativeNormalized(d, node.FullPath),
-                IsDirectory = true
+                IsDirectory = true,
+                FileSize = 0
             };
 
             // Before adding, optionally decide to collapse (trim) if would exceed budget.
@@ -142,12 +144,14 @@ internal sealed class TreeBuilder
         foreach (var f in files)
         {
             if (WasTruncated) break;
+            var fileInfo = new FileInfo(f);
             var child = new TreeNode
             {
                 Name = Path.GetFileName(f),
                 FullPath = f,
                 RelPath = IgnoreEngine.GetRelativeNormalized(f, node.FullPath),
-                IsDirectory = false
+                IsDirectory = false,
+                FileSize = fileInfo.Length
             };
             node.Children.Add(child);
             if (CountLine()) { WasTruncated = true; break; }

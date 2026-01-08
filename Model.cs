@@ -9,6 +9,7 @@ internal sealed class TreeNode
     public bool Ignored { get; set; } = false;
     public bool Collapsed { get; set; } = false;
     public int CollapsedCount { get; set; } = 0;
+    public long FileSize { get; set; } = 0;
 
     public List<TreeNode> Children { get; } = new();
 }

@@ -2,6 +2,21 @@ namespace DirT;
 
 internal static class TreeRender
 {
+    private static string FormatFileSize(long bytes)
+    {
+        const long KB = 1024;
+        const long MB = KB * 1024;
+        const long GB = MB * 1024;
+
+        if (bytes >= GB)
+            return (bytes / (double)GB).ToString("F1") + " GB";
+        if (bytes >= MB)
+            return (bytes / (double)MB).ToString("F1") + " MB";
+        if (bytes >= KB)
+            return (bytes / (double)KB).ToString("F0") + " KB";
+        return bytes + " B";
+    }
+
     public static IEnumerable<string> RenderIndented(TreeNode root, CliOptions options)
     {
         // Render children of root without forcing an extra synthetic root if the user provided a path.
@@ -42,7 +57,8 @@ internal static class TreeRender
             else
             {
                 if (!options.ShowFiles) continue;
-                yield return indent + c.Name;
+                var sizeSuffix = options.ShowFileSize ? $" [{FormatFileSize(c.FileSize)}]" : "";
+                yield return indent + c.Name + sizeSuffix;
             }
         }
     }
@@ -85,7 +101,8 @@ internal static class TreeRender
             {
                 if (!options.ShowFiles) continue;
                 var rel = (prefix + c.Name).Replace('\\', '/');
-                yield return rel;
+                var sizeSuffix = options.ShowFileSize ? $" [{FormatFileSize(c.FileSize)}]" : "";
+                yield return rel + sizeSuffix;
             }
         }
     }
