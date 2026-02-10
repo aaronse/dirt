@@ -23,6 +23,7 @@ internal sealed class CliOptions
     public bool ShowDirs { get; private set; } = true;
     public bool ShowFiles { get; private set; } = true;
     public bool ShowFileSize { get; private set; } = false;
+    public bool CountExcludes { get; private set; } = false;
 
     public OutputMode OutputMode { get; private set; } = OutputMode.Indented;
 
@@ -102,6 +103,13 @@ internal sealed class CliOptions
             if (a.Equals("/size", StringComparison.OrdinalIgnoreCase) || a.Equals("--size", StringComparison.OrdinalIgnoreCase))
             {
                 o.ShowFileSize = true;
+                i++;
+                continue;
+            }
+
+            if (a.Equals("/count", StringComparison.OrdinalIgnoreCase) || a.Equals("/c", StringComparison.OrdinalIgnoreCase))
+            {
+                o.CountExcludes = true;
                 i++;
                 continue;
             }

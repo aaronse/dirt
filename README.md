@@ -137,6 +137,12 @@ Similar to Exclude, add to defaults /i:+... and Remove from defaults /i:-... can
 
 Unlimited by default; use /max and/or /trim to prevent runaway output.
 
+Show excluded file counts (per directory):
+
+```
+/count
+```
+
 Limit depth:
 
 ```
@@ -232,6 +238,12 @@ dirt src /d:4 /i:*.cs;*.csproj;*.md
 
 ```
 dirt /x:-bin;-obj /show-ignored
+```
+
+### Count excluded file types (per directory)
+
+```
+dirt /ah /x:*.jpeg;*.json;*.png*;*.mp4;*.webm;*.mkv /show-ignored /count
 ```
 
 ### Ultra-compact overview

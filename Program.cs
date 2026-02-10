@@ -157,6 +157,12 @@ Limit total output lines (safety guard):
 /max:500
 ```
 
+Show excluded file counts (per directory):
+
+```
+/count
+```
+
 Collapse large directories automatically:
 
 ```
@@ -239,6 +245,12 @@ dirt src /d:4 /i:*.cs;*.csproj;*.md
 
 ```
 dirt /x:-bin;-obj /show-ignored
+```
+
+### Count excluded file types (per directory)
+
+```
+dirt /ah /x:*.jpeg;*.json;*.png*;*.mp4;*.webm;*.mkv /show-ignored /count
 ```
 
 ### Ultra-compact overview

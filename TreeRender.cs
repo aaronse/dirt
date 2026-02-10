@@ -23,6 +23,12 @@ internal static class TreeRender
         // But showing the root helps orientation; keep it.
         yield return NormalizeForOutput(root.Name, isDirectory: true);
 
+        if (options.CountExcludes)
+        {
+            foreach (var line in RenderExcludeCounts(root, depth: 1))
+                yield return line;
+        }
+
         foreach (var line in RenderIndentedInternal(root, options, depth: 1))
             yield return line;
     }
@@ -49,7 +55,15 @@ internal static class TreeRender
                 }
 
                 if (options.ShowDirs)
+                {
                     yield return indent + NormalizeForOutput(c.Name, isDirectory: true);
+
+                    if (options.CountExcludes)
+                    {
+                        foreach (var line in RenderExcludeCounts(c, depth + 1))
+                            yield return line;
+                    }
+                }
 
                 foreach (var line in RenderIndentedInternal(c, options, depth + 1))
                     yield return line;
@@ -60,6 +74,19 @@ internal static class TreeRender
                 var sizeSuffix = options.ShowFileSize ? $" [{FormatFileSize(c.FileSize)}]" : "";
                 yield return indent + c.Name + sizeSuffix;
             }
+        }
+    }
+
+    private static IEnumerable<string> RenderExcludeCounts(TreeNode node, int depth)
+    {
+        if (node.ExcludedTypeCounts.Count == 0) yield break;
+
+        var indent = new string(' ', depth * 2);
+        foreach (var kv in node.ExcludedTypeCounts
+                     .OrderByDescending(k => k.Value)
+                     .ThenBy(k => k.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            yield return indent + $"{kv.Value} {kv.Key}";
         }
     }
 

@@ -64,6 +64,11 @@ internal sealed class TreeBuilder
 
             if (ignored)
             {
+                if (!isDir && (_options.CountExcludes || _options.ShowAll) && _ignore.TryGetExcludePattern(e, isDir: false, out var pat) && pat != null)
+                {
+                    AddExcludeCount(node, pat);
+                }
+
                 if (_options.ShowIgnored && isDir && _options.ShowDirs)
                 {
                     node.Children.Add(new TreeNode
@@ -162,7 +167,11 @@ internal sealed class TreeBuilder
     {
         if (dir.Collapsed) return true;
         // keep if any visible children exist
-        return dir.Children.Count > 0;
+        if (dir.Children.Count > 0) return true;
+        // keep if directory has excluded files and user wants to see them
+        if (dir.ExcludedTypeCounts.Count > 0 && (_options.ShowAll || _options.ShowIgnored))
+            return true;
+        return false;
     }
 
     private bool WouldLikelyOverflowSoon()
@@ -185,5 +194,11 @@ internal sealed class TreeBuilder
     {
         _lines++;
         return _lines >= _options.MaxLines;
+    }
+
+    private void AddExcludeCount(TreeNode node, string pattern)
+    {
+        if (!node.ExcludedTypeCounts.TryGetValue(pattern, out var v)) v = 0;
+        node.ExcludedTypeCounts[pattern] = v + 1;
     }
 }

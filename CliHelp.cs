@@ -15,6 +15,7 @@ Core:
   /trim             Collapse large dirs to stay within /max
   /show-ignored     Show ignored dirs as placeholders (not expanded)
   /size             Show approximate file sizes in brackets after file names
+  /count, /c        Show per-directory excluded file counts by pattern
   /dirs             Show directories only
   /files            Show files only
   /paths            Paths-only output

@@ -82,6 +82,21 @@ internal sealed class PatternSet
         }
         return false;
     }
+
+    public string? FirstMatch(string relativePath, string name, bool isDirectory)
+    {
+        foreach (var pat in _patterns)
+        {
+            if (GlobMatcher.IsMatch(relativePath, pat, isDirectory)) return pat;
+            if (GlobMatcher.IsMatch(name, pat, isDirectory)) return pat;
+
+            if (!GlobMatcher.HasGlob(pat) && !pat.Contains('/') && !pat.Contains('\\'))
+            {
+                if (name.Equals(pat, StringComparison.OrdinalIgnoreCase)) return pat;
+            }
+        }
+        return null;
+    }
 }
 
 internal static class GlobMatcher
