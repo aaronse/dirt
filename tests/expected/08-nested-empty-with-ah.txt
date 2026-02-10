@@ -1,0 +1,3 @@
+﻿nested-empty/
+  child/
+  visible.txt

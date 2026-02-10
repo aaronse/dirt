@@ -1,0 +1,2 @@
+﻿mixed-content/
+  readme.txt
