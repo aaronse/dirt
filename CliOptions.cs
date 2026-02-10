@@ -18,6 +18,7 @@ internal sealed class CliOptions
     public bool Trim { get; private set; } = false;
     public bool ShowIgnored { get; private set; } = false;
     public bool Verbose { get; private set; } = false;
+    public bool ShowAll { get; private set; } = false;
 
     public bool ShowDirs { get; private set; } = true;
     public bool ShowFiles { get; private set; } = true;
@@ -70,6 +71,14 @@ internal sealed class CliOptions
             if (a.Equals("/show-ignored", StringComparison.OrdinalIgnoreCase))
             {
                 o.ShowIgnored = true;
+                i++;
+                continue;
+            }
+
+            if (a.Equals("/ah", StringComparison.OrdinalIgnoreCase))
+            {
+                o.ShowAll = true;
+                o.UseGitIgnore = false;
                 i++;
                 continue;
             }

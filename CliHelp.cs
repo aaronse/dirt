@@ -20,6 +20,7 @@ Core:
   /paths            Paths-only output
   /json             JSON output
   /v                Verbose logs to stderr
+  /ah               Show all files, including those ignored by .gitignore (implies --no-git-ignore)
 
 Exclude:
   /x:<a;b;c>        Replace default excludes
