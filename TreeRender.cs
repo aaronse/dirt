@@ -21,11 +21,12 @@ internal static class TreeRender
     {
         // Render children of root without forcing an extra synthetic root if the user provided a path.
         // But showing the root helps orientation; keep it.
-        yield return NormalizeForOutput(root.Name, isDirectory: true);
+        var rootSizeSuffix = options.ShowFileSize && root.FileSize > 0 ? $" [{FormatFileSize(root.FileSize)}]" : "";
+        yield return NormalizeForOutput(root.Name, isDirectory: true) + rootSizeSuffix;
 
         if (options.CountExcludes)
         {
-            foreach (var line in RenderExcludeCounts(root, depth: 1))
+            foreach (var line in RenderExcludeCounts(root, depth: 1, options))
                 yield return line;
         }
 
@@ -56,11 +57,12 @@ internal static class TreeRender
 
                 if (options.ShowDirs)
                 {
-                    yield return indent + NormalizeForOutput(c.Name, isDirectory: true);
+                    var sizeSuffix = options.ShowFileSize && c.FileSize > 0 ? $" [{FormatFileSize(c.FileSize)}]" : "";
+                    yield return indent + NormalizeForOutput(c.Name, isDirectory: true) + sizeSuffix;
 
                     if (options.CountExcludes)
                     {
-                        foreach (var line in RenderExcludeCounts(c, depth + 1))
+                        foreach (var line in RenderExcludeCounts(c, depth + 1, options))
                             yield return line;
                     }
                 }
@@ -77,7 +79,7 @@ internal static class TreeRender
         }
     }
 
-    private static IEnumerable<string> RenderExcludeCounts(TreeNode node, int depth)
+    private static IEnumerable<string> RenderExcludeCounts(TreeNode node, int depth, CliOptions options)
     {
         if (node.ExcludedTypeCounts.Count == 0) yield break;
 
@@ -86,7 +88,12 @@ internal static class TreeRender
                      .OrderBy(k => IsTokenLabel(k.Key) ? 0 : 1)
                      .ThenBy(k => k.Key, StringComparer.OrdinalIgnoreCase))
         {
-            yield return indent + $"{kv.Value} {kv.Key}";
+            var sizeSuffix = "";
+            if (options.ShowFileSize && node.ExcludedTypeSizes.TryGetValue(kv.Key, out var size))
+            {
+                sizeSuffix = $" [{FormatFileSize(size)}]";
+            }
+            yield return indent + $"{kv.Value} {kv.Key}" + sizeSuffix;
         }
     }
 
@@ -120,7 +127,11 @@ internal static class TreeRender
             if (c.IsDirectory)
             {
                 var rel = (prefix + c.Name).Replace('\\', '/');
-                if (options.ShowDirs) yield return rel;
+                if (options.ShowDirs)
+                {
+                    var sizeSuffix = options.ShowFileSize && c.FileSize > 0 ? $" [{FormatFileSize(c.FileSize)}]" : "";
+                    yield return rel + sizeSuffix;
+                }
 
                 if (c.Collapsed) continue;
 

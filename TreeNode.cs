@@ -12,4 +12,5 @@ internal sealed class TreeNode
     public bool Collapsed { get; set; }
     public int CollapsedCount { get; set; }
     public Dictionary<string, int> ExcludedTypeCounts { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, long> ExcludedTypeSizes { get; } = new(StringComparer.OrdinalIgnoreCase);
 }

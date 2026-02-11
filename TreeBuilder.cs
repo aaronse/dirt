@@ -71,6 +71,19 @@ internal sealed class TreeBuilder
                     AddExcludeCount(node, pat);
                     if (!string.IsNullOrWhiteSpace(label) && !label.Equals(pat, StringComparison.OrdinalIgnoreCase))
                         AddExcludeCount(node, label);
+                    
+                    // Track excluded file sizes
+                    if (_options.ShowFileSize)
+                    {
+                        try
+                        {
+                            var fileInfo = new FileInfo(e);
+                            AddExcludeSize(node, pat, fileInfo.Length);
+                            if (!string.IsNullOrWhiteSpace(label) && !label.Equals(pat, StringComparison.OrdinalIgnoreCase))
+                                AddExcludeSize(node, label, fileInfo.Length);
+                        }
+                        catch { /* Silently ignore file access errors */ }
+                    }
                 }
 
                 if (_options.ShowIgnored && isDir && _options.ShowDirs)
@@ -165,6 +178,55 @@ internal sealed class TreeBuilder
             node.Children.Add(child);
             if (CountLine()) { WasTruncated = true; break; }
         }
+
+        // Calculate aggregate folder sizes after all children processed
+        if (_options.ShowFileSize)
+        {
+            CalculateAggregateSizes(node);
+        }
+    }
+
+    private void CalculateAggregateSizes(TreeNode node)
+    {
+        long totalSize = 0;
+        
+        // Add sizes of excluded files at THIS directory level (before aggregating from children)
+        // This prevents double-counting since child directories' FileSize already includes their excluded files
+        // Only count actual patterns, not token labels (which start with {), to avoid double-counting
+        // files that match multiple tokens (e.g., *.mp4 matches {media} token, but we only count once)
+        foreach (var kv in node.ExcludedTypeSizes)
+        {
+            // Skip token labels (aggregate categories starting with {)
+            if (!kv.Key.StartsWith("{"))
+            {
+                totalSize += kv.Value;
+            }
+        }
+        
+        foreach (var child in node.Children)
+        {
+            if (child.IsDirectory)
+            {
+                // Accumulate folder sizes (already calculated recursively, includes their excluded files)
+                totalSize += child.FileSize;
+                
+                // Aggregate excluded type sizes from children (for display purposes)
+                foreach (var kv in child.ExcludedTypeSizes)
+                {
+                    if (!node.ExcludedTypeSizes.TryGetValue(kv.Key, out var existing))
+                        existing = 0;
+                    node.ExcludedTypeSizes[kv.Key] = existing + kv.Value;
+                }
+            }
+            else
+            {
+                // Accumulate visible file sizes
+                totalSize += child.FileSize;
+            }
+        }
+        
+        // Store the aggregated size in this directory node
+        node.FileSize = totalSize;
     }
 
     private bool ShouldKeepDirectory(TreeNode dir)
@@ -204,5 +266,11 @@ internal sealed class TreeBuilder
     {
         if (!node.ExcludedTypeCounts.TryGetValue(pattern, out var v)) v = 0;
         node.ExcludedTypeCounts[pattern] = v + 1;
+    }
+
+    private void AddExcludeSize(TreeNode node, string pattern, long size)
+    {
+        if (!node.ExcludedTypeSizes.TryGetValue(pattern, out var v)) v = 0;
+        node.ExcludedTypeSizes[pattern] = v + size;
     }
 }
