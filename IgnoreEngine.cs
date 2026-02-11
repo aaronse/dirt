@@ -49,12 +49,11 @@ internal sealed class IgnoreEngine
         return _options.Includes.MatchesPath(rel, isDirectory: false) || _options.Includes.MatchesName(Path.GetFileName(fullPath), isDirectory: false);
     }
 
-    public bool TryGetExcludePattern(string fullPath, bool isDir, out string? pattern)
+    public bool TryGetExcludePatternAndLabel(string fullPath, bool isDir, out string? pattern, out string? label)
     {
         var name = Path.GetFileName(fullPath);
         var rel = GetRelativeNormalized(fullPath, _rootPath);
-        pattern = _options.Excludes.FirstMatch(rel, name, isDir);
-        return pattern != null;
+        return _options.Excludes.TryGetFirstMatchWithLabel(rel, name, isDir, out pattern, out label);
     }
 
     public static string GetRelativeNormalized(string fullPath, string basePath)

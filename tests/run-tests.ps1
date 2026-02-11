@@ -71,6 +71,78 @@ $Tests = @(
         Desc = "Nested empty-after-filter directory SHOULD appear with /ah"
         Fixture = "nested-empty"
         Args = @("/ah", "/x:*.mp4")
+    },
+    @{
+        Name = "09-token-media-single"
+        Desc = "Token {media} should exclude all media files (video, audio, images)"
+        Fixture = "token-test"
+        Args = @("/x:{media}")
+    },
+    @{
+        Name = "10-token-code-single"
+        Desc = "Token {code} should exclude all code files"
+        Fixture = "token-test"
+        Args = @("/x:{code}")
+    },
+    @{
+        Name = "11-token-docs-single"
+        Desc = "Token {docs} should exclude all documentation files"
+        Fixture = "token-test"
+        Args = @("/x:{docs}")
+    },
+    @{
+        Name = "12-token-data-single"
+        Desc = "Token {data} should exclude all data files"
+        Fixture = "token-test"
+        Args = @("/x:{data}")
+    },
+    @{
+        Name = "13-token-archive-single"
+        Desc = "Token {archive} should exclude all archive files"
+        Fixture = "token-test"
+        Args = @("/x:{archive}")
+    },
+    @{
+        Name = "14-token-multiple-combined"
+        Desc = "Multiple tokens {media};{data} should exclude both groups"
+        Fixture = "token-test"
+        Args = @("/x:{media};{data}")
+    },
+    @{
+        Name = "15-token-mixed-with-patterns"
+        Desc = "Token mixed with regular patterns {media};*.log should work"
+        Fixture = "token-test"
+        Args = @("/x:{media};*.log")
+    },
+    @{
+        Name = "16-token-case-insensitive"
+        Desc = "Token {MEDIA} (uppercase) should work same as {media}"
+        Fixture = "token-test"
+        Args = @("/x:{MEDIA}")
+    },
+    @{
+        Name = "17-token-with-modifier-add"
+        Desc = "Token with + modifier should add to defaults"
+        Fixture = "mixed-content"
+        Args = @("/x:+{media}")
+    },
+    @{
+        Name = "18-token-all-types"
+        Desc = "All token types combined should exclude everything except .log"
+        Fixture = "token-test"
+        Args = @("/x:{media};{code};{docs};{data};{archive}")
+    },
+    @{
+        Name = "19-token-all-shorthand"
+        Desc = "Token {all} should expand to all token groups"
+        Fixture = "token-test"
+        Args = @("/x:{all}")
+    },
+    @{
+        Name = "20-token-all-counts"
+        Desc = "Token {all} should report counts by token and pattern"
+        Fixture = "token-test"
+        Args = @("/ah", "/c", "/x:{all}")
     }
 )
 

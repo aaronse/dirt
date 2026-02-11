@@ -83,12 +83,15 @@ internal static class TreeRender
 
         var indent = new string(' ', depth * 2);
         foreach (var kv in node.ExcludedTypeCounts
-                     .OrderByDescending(k => k.Value)
+                     .OrderBy(k => IsTokenLabel(k.Key) ? 0 : 1)
                      .ThenBy(k => k.Key, StringComparer.OrdinalIgnoreCase))
         {
             yield return indent + $"{kv.Value} {kv.Key}";
         }
     }
+
+    private static bool IsTokenLabel(string key)
+        => key.Length >= 2 && key.StartsWith("{") && key.EndsWith("}");
 
     public static IEnumerable<string> RenderPaths(TreeNode root, CliOptions options)
     {

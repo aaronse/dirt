@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 
 namespace DirT;
@@ -8,8 +9,56 @@ internal sealed class PatternSet
 {
     public IReadOnlyList<string> Patterns => _patterns;
     private readonly List<string> _patterns;
+    private readonly Dictionary<string, string> _patternLabels;
 
-    private PatternSet(IEnumerable<string> patterns) => _patterns = patterns.Where(p => !string.IsNullOrWhiteSpace(p)).ToList();
+    // Predefined token definitions for common file type groups
+    private static readonly Dictionary<string, string> TokenDefinitions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["media"] = "*.jpg;*.jpeg;*.png;*.png*;*.gif;*.bmp;*.svg;*.webp;*.ico;*.tiff;*.tif;" +
+                    "*.mp4;*.avi;*.mkv;*.webm;*.mov;*.flv;*.wmv;*.m4v;*.mpg;*.mpeg;" +
+                    "*.mp3;*.wav;*.flac;*.aac;*.ogg;*.m4a;*.wma;*.opus",
+        
+        ["code"] = "*.cs;*.csproj;*.sln;*.vb;*.vbproj;*.fs;*.fsproj;" +
+                   "*.js;*.ts;*.jsx;*.tsx;*.json;*.mjs;*.cjs;" +
+                   "*.py;*.pyc;*.pyo;*.pyd;" +
+                   "*.java;*.class;*.jar;*.war;" +
+                   "*.cpp;*.c;*.h;*.hpp;*.cc;*.cxx;*.hxx;" +
+                   "*.go;*.rs;*.rb;*.php;*.swift;*.kt;*.kts;*.scala;*.clj;*.cljs;" +
+                   "*.r;*.m;*.mm;*.sh;*.bat;*.ps1;*.cmd;*.pl;*.lua;*.asm;*.s",
+        
+        ["docs"] = "*.md;*.txt;*.pdf;*.doc;*.docx;*.odt;*.rtf;*.tex;*.rst;" +
+                   "*.adoc;*.asciidoc;*.html;*.htm;*.xml;*.xhtml",
+        
+        ["data"] = "*.json;*.xml;*.yaml;*.yml;*.toml;*.ini;*.cfg;*.conf;" +
+                   "*.csv;*.tsv;*.dat;" +
+                   "*.sql;*.db;*.sqlite;*.sqlite3;*.mdb;*.accdb;" +
+                   "*.parquet;*.avro;*.jsonl;*.ndjson",
+        
+        ["archive"] = "*.zip;*.rar;*.7z;*.tar;*.gz;*.bz2;*.xz;*.lz;*.lzma;" +
+                      "*.tgz;*.tbz2;*.txz;*.zipx;*.cab;*.iso;*.dmg"
+    };
+
+    private static readonly Regex TokenRegex = new(@"^\{(\w+)\}$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+    private readonly record struct PatternEntry(string Pattern, string Display);
+
+    private PatternSet(IEnumerable<string> patterns)
+        : this(patterns.Select(p => new PatternEntry(p, p)))
+    {
+    }
+
+    private PatternSet(IEnumerable<PatternEntry> entries)
+    {
+        _patterns = new List<string>();
+        _patternLabels = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var entry in entries)
+        {
+            if (string.IsNullOrWhiteSpace(entry.Pattern)) continue;
+            _patterns.Add(entry.Pattern);
+            _patternLabels[entry.Pattern] = entry.Display;
+        }
+    }
 
     public static PatternSet DefaultExcludes() => new(new[]
     {
@@ -20,6 +69,45 @@ internal sealed class PatternSet
 
     // Empty includes means "include everything"
     public static PatternSet EmptyIncludes() => new(Array.Empty<string>());
+
+    /// <summary>
+    /// Expands tokens like {media}, {code}, etc. into pattern entries with a display label.
+    /// Tokens are case-insensitive. Unknown tokens are treated as literal patterns.
+    /// </summary>
+    /// <param name="exprs">Semicolon-delimited expressions, may include tokens like {media}</param>
+    /// <returns>Expanded entries with display labels for counting</returns>
+    private static IEnumerable<PatternEntry> ExpandTokenEntries(string exprs)
+    {
+        foreach (var item in SplitExprList(exprs))
+        {
+            var match = TokenRegex.Match(item);
+            if (match.Success)
+            {
+                var tokenName = match.Groups[1].Value;
+                if (tokenName.Equals("all", StringComparison.OrdinalIgnoreCase))
+                {
+                    foreach (var token in TokenDefinitions.Keys
+                                 .Where(k => !k.Equals("all", StringComparison.OrdinalIgnoreCase))
+                                 .OrderBy(k => k, StringComparer.OrdinalIgnoreCase))
+                    {
+                        var label = "{" + token.ToLowerInvariant() + "}";
+                        foreach (var pat in SplitExprList(TokenDefinitions[token]))
+                            yield return new PatternEntry(pat, label);
+                    }
+                    continue;
+                }
+                if (TokenDefinitions.TryGetValue(tokenName, out var expansion))
+                {
+                    var label = "{" + tokenName.ToLowerInvariant() + "}";
+                    foreach (var pat in SplitExprList(expansion))
+                        yield return new PatternEntry(pat, label);
+                    continue;
+                }
+            }
+
+            yield return new PatternEntry(item, item);
+        }
+    }
 
     public PatternSet ApplyDirective(string directive, DirectiveKind kind)
     {
@@ -34,21 +122,26 @@ internal sealed class PatternSet
             trimmed = trimmed[1..];
         }
 
-        var items = SplitExprList(trimmed);
+        // Expand tokens like {media} into pattern entries before applying mode
+        var items = ExpandTokenEntries(trimmed);
 
         if (mode == 'r')
             return new PatternSet(items);
 
         if (mode == '+')
         {
-            var merged = _patterns.Concat(items).Distinct(StringComparer.OrdinalIgnoreCase);
-            return new PatternSet(merged);
+            var merged = new Dictionary<string, string>(_patternLabels, StringComparer.OrdinalIgnoreCase);
+            foreach (var entry in items)
+                merged[entry.Pattern] = entry.Display;
+
+            return new PatternSet(merged.Select(kv => new PatternEntry(kv.Key, kv.Value)));
         }
 
         // mode == '-'
         {
-            var remove = new HashSet<string>(items, StringComparer.OrdinalIgnoreCase);
-            var kept = _patterns.Where(p => !remove.Contains(p));
+            var remove = new HashSet<string>(items.Select(i => i.Pattern), StringComparer.OrdinalIgnoreCase);
+            var kept = _patterns.Where(p => !remove.Contains(p))
+                .Select(p => new PatternEntry(p, _patternLabels[p]));
             return new PatternSet(kept);
         }
     }
@@ -97,10 +190,25 @@ internal sealed class PatternSet
         }
         return null;
     }
+
+    public bool TryGetFirstMatchWithLabel(string relativePath, string name, bool isDirectory, out string? pattern, out string? label)
+    {
+        pattern = FirstMatch(relativePath, name, isDirectory);
+        if (pattern == null)
+        {
+            label = null;
+            return false;
+        }
+
+        label = _patternLabels.TryGetValue(pattern, out var display) ? display : pattern;
+        return true;
+    }
 }
 
 internal static class GlobMatcher
 {
+    private static readonly ConcurrentDictionary<string, Regex> RegexCache = new(StringComparer.Ordinal);
+
     public static bool HasGlob(string pattern) => pattern.IndexOfAny(new[] { '*', '?', '[', ']' }) >= 0;
 
     public static bool IsMatch(string pathOrName, string pattern, bool isDirectory)
@@ -128,9 +236,10 @@ internal static class GlobMatcher
             return last.Equals(pattern, StringComparison.OrdinalIgnoreCase);
         }
 
-        // Support ** by translating to a regex.
-        var regex = "^" + GlobToRegex(pattern) + "$";
-        return Regex.IsMatch(normalized, regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        // Support ** by translating to a regex (cache compiled regex per pattern).
+        var regex = RegexCache.GetOrAdd(pattern, p =>
+            new Regex("^" + GlobToRegex(p) + "$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled));
+        return regex.IsMatch(normalized);
     }
 
     private static string GlobToRegex(string pattern)

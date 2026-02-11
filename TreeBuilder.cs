@@ -64,9 +64,13 @@ internal sealed class TreeBuilder
 
             if (ignored)
             {
-                if (!isDir && (_options.CountExcludes || _options.ShowAll) && _ignore.TryGetExcludePattern(e, isDir: false, out var pat) && pat != null)
+                if (!isDir && (_options.CountExcludes || _options.ShowAll)
+                    && _ignore.TryGetExcludePatternAndLabel(e, isDir: false, out var pat, out var label)
+                    && pat != null)
                 {
                     AddExcludeCount(node, pat);
+                    if (!string.IsNullOrWhiteSpace(label) && !label.Equals(pat, StringComparison.OrdinalIgnoreCase))
+                        AddExcludeCount(node, label);
                 }
 
                 if (_options.ShowIgnored && isDir && _options.ShowDirs)

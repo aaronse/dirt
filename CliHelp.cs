@@ -35,6 +35,26 @@ Include:
   /i:-<a;b;c>       Remove from include filters
   --include <exprs> Same as /i:
 
+Tokens:
+  Use predefined tokens wrapped in {} for common file type groups (case-insensitive).
+  Tokens can be mixed with patterns and used with +/- modifiers.
+
+  Available tokens:
+    {media}         Images, video, audio (jpg, png, gif, mp4, mp3, wav, etc.)
+    {code}          Source code files (cs, js, py, java, cpp, go, rs, etc.)
+    {docs}          Documentation (md, txt, pdf, doc, html, etc.)
+    {data}          Data files (json, xml, yaml, csv, sql, db, etc.)
+    {archive}       Compressed files (zip, rar, 7z, tar, gz, etc.)
+    {all}           Shorthand for {media}+{code}+{docs}+{data}+{archive}
+
+  Examples:
+    dirt /x:{media}                 Exclude all media files
+    dirt /x:{media};{data}          Exclude media and data files
+    dirt /x:{media};temp*           Exclude media files and temp* patterns
+    dirt /x:+{code}                 Add code files to default excludes
+    dirt /x:{MEDIA}                 Case-insensitive (same as {media})
+    dirt /x:{all}                   Exclude all token file groups
+
 Gitignore:
   --no-git-ignore   Ignore .gitignore rules (still applies DirT defaults)
 

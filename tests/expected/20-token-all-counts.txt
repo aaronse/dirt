@@ -1,0 +1,18 @@
+﻿token-test/
+  2 {archive}
+  2 {code}
+  2 {data}
+  2 {docs}
+  3 {media}
+  1 *.cs
+  1 *.csv
+  1 *.js
+  1 *.json
+  1 *.md
+  1 *.mp3
+  1 *.mp4
+  1 *.png
+  1 *.tar
+  1 *.txt
+  1 *.zip
+  keep.log
