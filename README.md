@@ -135,7 +135,7 @@ Similar to Exclude, add to defaults /i:+... and Remove from defaults /i:-... can
 
 ### Depth and output control
 
-Unlimited by default; use /max and/or /trim to prevent runaway output.
+Unlimited depth by default; use /max and/or /trim to prevent runaway output.
 
 Show excluded file counts (per directory):
 
@@ -155,6 +155,11 @@ Limit total output lines (safety guard):
 ```
 /max:500
 ```
+
+**Note:** If the output is truncated due to the `/max` limit, DirT will:
+- Return exit code 2 (still producing useful partial output)
+- Display a warning message to stderr with the exact command to re-run with doubled limit
+- Example: `dirt /max:1000` (if original was `/max:500`)
 
 Collapse large directories automatically:
 
@@ -228,7 +233,7 @@ DirT intentionally mirrors common tools where possible.
 
 ## Examples
 
-### Typical “LLM context” dump
+### Typical "LLM context" dump
 
 ```
 dirt src /d:4 /i:*.cs;*.csproj;*.md
@@ -275,7 +280,7 @@ dirt /paths /i:*.cs
 
 * `.dirtignore` support
 * language-aware presets (`/preset:csharp`, `/preset:web`)
-* “key files” mode (entry points only)
+* "key files" mode (entry points only)
 * README auto-emit (`dirt --emit-readme`)
 
 ---

@@ -63,7 +63,7 @@ README:
 
 Exit codes:
   0 success
-  2 output truncated by /max (still produced useful output)
+  2 output truncated by /max (still produced useful output; see stderr for retry command)
   64 usage error
 ";
 }

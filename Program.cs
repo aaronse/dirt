@@ -323,6 +323,8 @@ TBD (project decision)
                     WriteIndented = true
                 });
                 Console.WriteLine(json);
+                if (builder.WasTruncated)
+                    EmitTruncationWarning(args, options.MaxLines);
                 return builder.WasTruncated ? 2 : 0;
             }
 
@@ -330,11 +332,16 @@ TBD (project decision)
             {
                 foreach (var p in TreeRender.RenderPaths(tree, options))
                     Console.WriteLine(p);
+                if (builder.WasTruncated)
+                    EmitTruncationWarning(args, options.MaxLines);
                 return builder.WasTruncated ? 2 : 0;
             }
 
             foreach (var line in TreeRender.RenderIndented(tree, options))
                 Console.WriteLine(line);
+
+            if (builder.WasTruncated)
+                EmitTruncationWarning(args, options.MaxLines);
 
             return builder.WasTruncated ? 2 : 0;
         }
@@ -351,5 +358,47 @@ TBD (project decision)
             if (args.Contains("/v", StringComparer.OrdinalIgnoreCase)) Console.Error.WriteLine(ex);
             return 1;
         }
+    }
+
+    private static void EmitTruncationWarning(string[] args, int currentMaxLines)
+    {
+        var newMaxLines = currentMaxLines * 2;
+        var retryCommand = BuildRetryCommand(args, currentMaxLines, newMaxLines);
+        
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.Error.WriteLine();
+        Console.Error.WriteLine($"[DirT] WARNING: Output truncated at {currentMaxLines} lines (max limit reached)");
+        Console.Error.WriteLine($"[DirT] The directory tree is larger than the configured limit.");
+        Console.Error.WriteLine($"[DirT] To see more content, re-run with increased limit:");
+        Console.Error.WriteLine();
+        Console.Error.WriteLine($"  {retryCommand}");
+        Console.Error.WriteLine();
+        Console.ResetColor();
+    }
+
+    private static string BuildRetryCommand(string[] args, int oldMaxLines, int newMaxLines)
+    {
+        var newArgs = new List<string>();
+        var maxLinesSeen = false;
+
+        foreach (var arg in args)
+        {
+            if (arg.StartsWith("/max:", StringComparison.OrdinalIgnoreCase))
+            {
+                newArgs.Add($"/max:{newMaxLines}");
+                maxLinesSeen = true;
+            }
+            else
+            {
+                newArgs.Add(arg);
+            }
+        }
+
+        if (!maxLinesSeen)
+        {
+            newArgs.Add($"/max:{newMaxLines}");
+        }
+
+        return "dirt " + string.Join(" ", newArgs.Select(a => a.Contains(' ') ? $"\"{a}\"" : a));
     }
 }
