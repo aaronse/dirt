@@ -19,11 +19,14 @@ internal sealed class CliOptions
     public bool ShowIgnored { get; private set; } = false;
     public bool Verbose { get; private set; } = false;
     public bool ShowAll { get; private set; } = false;
+    public bool SkipHiddenFolders { get; private set; } = false;
 
     public bool ShowDirs { get; private set; } = true;
     public bool ShowFiles { get; private set; } = true;
     public bool ShowFileSize { get; private set; } = false;
     public bool CountExcludes { get; private set; } = false;
+    public PatternSet? CountPatterns { get; private set; } = null;
+    public bool SkipDefaultDirExcludes { get; private set; } = false;
 
     public OutputMode OutputMode { get; private set; } = OutputMode.Indented;
 
@@ -84,6 +87,15 @@ internal sealed class CliOptions
                 continue;
             }
 
+            if (a.Equals("/a", StringComparison.OrdinalIgnoreCase))
+            {
+                o.SkipHiddenFolders = true;
+                o.ShowAll = true;
+                o.UseGitIgnore = false;
+                i++;
+                continue;
+            }
+
             if (a.Equals("/dirs", StringComparison.OrdinalIgnoreCase))
             {
                 o.ShowFiles = false;
@@ -110,6 +122,17 @@ internal sealed class CliOptions
             if (a.Equals("/count", StringComparison.OrdinalIgnoreCase) || a.Equals("/c", StringComparison.OrdinalIgnoreCase))
             {
                 o.CountExcludes = true;
+                i++;
+                continue;
+            }
+
+            if (a.StartsWith("/c:", StringComparison.OrdinalIgnoreCase))
+            {
+                o.CountExcludes = true;
+                var patterns = a[3..];
+                o.CountPatterns = PatternSet.FromExpression(patterns);
+                // When using /c:, skip default directory excludes to allow traversing all directories
+                o.SkipDefaultDirExcludes = true;
                 i++;
                 continue;
             }

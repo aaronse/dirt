@@ -22,10 +22,20 @@ internal sealed class IgnoreEngine
     public bool IsIgnored(string fullPath, bool isDir)
     {
         var name = Path.GetFileName(fullPath);
-        if (_options.Excludes.MatchesName(name, isDir)) return true;
+        
+        // When SkipDefaultDirExcludes is set and this is a directory,
+        // don't match against default directory patterns
+        if (isDir && _options.SkipDefaultDirExcludes && PatternSet.IsDefaultDirectoryPattern(name))
+        {
+            // Skip this default pattern, but still check other patterns and gitignore
+        }
+        else
+        {
+            if (_options.Excludes.MatchesName(name, isDir)) return true;
 
-        var rel = GetRelativeNormalized(fullPath, _rootPath);
-        if (_options.Excludes.MatchesPath(rel, isDir)) return true;
+            var rel = GetRelativeNormalized(fullPath, _rootPath);
+            if (_options.Excludes.MatchesPath(rel, isDir)) return true;
+        }
 
         if (_gitIgnore != null && _git != null)
         {

@@ -16,12 +16,14 @@ Core:
   /show-ignored     Show ignored dirs as placeholders (not expanded)
   /size             Show approximate file sizes in brackets after file names
   /count, /c        Show per-directory excluded file counts by pattern
+  /c:<patterns>     Aggregate and count specific patterns (supports tokens like {media})
   /dirs             Show directories only
   /files            Show files only
   /paths            Paths-only output
   /json             JSON output
   /v                Verbose logs to stderr
   /ah               Show all files, including those ignored by .gitignore (implies --no-git-ignore)
+  /a                Skip hidden folders (e.g., .git, .venv) from output (implies --no-git-ignore)
 
 Exclude:
   /x:<a;b;c>        Replace default excludes
@@ -54,6 +56,8 @@ Tokens:
     dirt /x:+{code}                 Add code files to default excludes
     dirt /x:{MEDIA}                 Case-insensitive (same as {media})
     dirt /x:{all}                   Exclude all token file groups
+    dirt /a /x:*.pyc /c:{media}     Skip hidden folders, exclude *.pyc, count media files
+    dirt /c:{media};*.log           Aggregate/count media and log files (show as counts)
 
 Gitignore:
   --no-git-ignore   Ignore .gitignore rules (still applies DirT defaults)

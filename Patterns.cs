@@ -16,10 +16,11 @@ internal sealed class PatternSet
     {
         ["media"] = "*.jpg;*.jpeg;*.png;*.png*;*.gif;*.bmp;*.svg;*.webp;*.ico;*.tiff;*.tif;" +
                     "*.mp4;*.avi;*.mkv;*.webm;*.mov;*.flv;*.wmv;*.m4v;*.mpg;*.mpeg;" +
-                    "*.mp3;*.wav;*.flac;*.aac;*.ogg;*.m4a;*.wma;*.opus",
+                    "*.mp3;*.wav;*.flac;*.aac;*.ogg;*.m4a;*.wma;*.opus;" +
+                    "*.ttf;*.woff2",
         
         ["code"] = "*.cs;*.csproj;*.sln;*.vb;*.vbproj;*.fs;*.fsproj;" +
-                   "*.js;*.ts;*.jsx;*.tsx;*.json;*.mjs;*.cjs;" +
+                   "*.js;*.ts;*.jsx;*.tsx;*.json;*.mjs;*.cjs;*.css;" +
                    "*.py;*.pyc;*.pyo;*.pyd;" +
                    "*.java;*.class;*.jar;*.war;" +
                    "*.cpp;*.c;*.h;*.hpp;*.cc;*.cxx;*.hxx;" +
@@ -67,8 +68,26 @@ internal sealed class PatternSet
         "packages"
     });
 
+    private static readonly HashSet<string> DefaultDirectoryPatterns = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "bin", "obj", "node_modules", ".git", ".vs", ".idea",
+        "dist", "build", "out", "target", "coverage", ".cache",
+        "packages"
+    };
+
+    public static bool IsDefaultDirectoryPattern(string pattern)
+        => DefaultDirectoryPatterns.Contains(pattern);
+
     // Empty includes means "include everything"
     public static PatternSet EmptyIncludes() => new(Array.Empty<string>());
+
+    /// <summary>
+    /// Creates a PatternSet from a semicolon-delimited expression that may include tokens like {media}.
+    /// </summary>
+    public static PatternSet FromExpression(string exprs)
+    {
+        return new PatternSet(ExpandTokenEntries(exprs));
+    }
 
     /// <summary>
     /// Expands tokens like {media}, {code}, etc. into pattern entries with a display label.

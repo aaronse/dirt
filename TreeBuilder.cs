@@ -7,6 +7,31 @@ internal sealed class TreeBuilder
     private int _lines;
     public bool WasTruncated { get; private set; }
 
+    private static bool IsHidden(string path)
+    {
+        try
+        {
+            var attrs = File.GetAttributes(path);
+            return (attrs & FileAttributes.Hidden) == FileAttributes.Hidden;
+        }
+        catch
+        {
+            // If we can't get attributes (permissions, doesn't exist, etc.), assume not hidden
+            return false;
+        }
+    }
+
+    private bool ShouldCountFile(string fullPath, string matchedPattern)
+    {
+        // If no specific count patterns are specified, count all excluded files (backward compatible)
+        if (_options.CountPatterns == null)
+            return true;
+
+        // Otherwise, only count files that match the count patterns
+        var fileName = Path.GetFileName(fullPath);
+        return _options.CountPatterns.MatchesName(fileName, isDirectory: false);
+    }
+
     public TreeBuilder(IgnoreEngine ignore, CliOptions options)
     {
         _ignore = ignore;
@@ -60,6 +85,39 @@ internal sealed class TreeBuilder
             if (WasTruncated) break;
 
             var isDir = Directory.Exists(e);
+
+            // Skip hidden folders if /a flag is enabled
+            if (isDir && _options.SkipHiddenFolders && IsHidden(e))
+                continue;
+
+            // Check if this file should be counted (regardless of exclude patterns)
+            if (!isDir && _options.CountPatterns != null)
+            {
+                var fileName = Path.GetFileName(e);
+                var rel = IgnoreEngine.GetRelativeNormalized(e, node.FullPath);
+                if (_options.CountPatterns.TryGetFirstMatchWithLabel(rel, fileName, isDirectory: false, out var countPat, out var countLabel)
+                    && countPat != null)
+                {
+                    // This file matches count patterns - add to counts
+                    AddExcludeCount(node, countPat);
+                    if (!string.IsNullOrWhiteSpace(countLabel) && !countLabel.Equals(countPat, StringComparison.OrdinalIgnoreCase))
+                        AddExcludeCount(node, countLabel);
+                    
+                    if (_options.ShowFileSize)
+                    {
+                        try
+                        {
+                            var fileInfo = new FileInfo(e);
+                            AddExcludeSize(node, countPat, fileInfo.Length);
+                            if (!string.IsNullOrWhiteSpace(countLabel) && !countLabel.Equals(countPat, StringComparison.OrdinalIgnoreCase))
+                                AddExcludeSize(node, countLabel, fileInfo.Length);
+                        }
+                        catch { /* Silently ignore file access errors */ }
+                    }
+                    continue; // Don't add this file to the tree
+                }
+            }
+
             var ignored = _ignore.IsIgnored(e, isDir);
 
             if (ignored)
@@ -68,21 +126,25 @@ internal sealed class TreeBuilder
                     && _ignore.TryGetExcludePatternAndLabel(e, isDir: false, out var pat, out var label)
                     && pat != null)
                 {
-                    AddExcludeCount(node, pat);
-                    if (!string.IsNullOrWhiteSpace(label) && !label.Equals(pat, StringComparison.OrdinalIgnoreCase))
-                        AddExcludeCount(node, label);
-                    
-                    // Track excluded file sizes
-                    if (_options.ShowFileSize)
+                    // Only count files if they match CountPatterns (or CountPatterns is null = count all)
+                    if (ShouldCountFile(e, pat))
                     {
-                        try
+                        AddExcludeCount(node, pat);
+                        if (!string.IsNullOrWhiteSpace(label) && !label.Equals(pat, StringComparison.OrdinalIgnoreCase))
+                            AddExcludeCount(node, label);
+                        
+                        // Track excluded file sizes
+                        if (_options.ShowFileSize)
                         {
-                            var fileInfo = new FileInfo(e);
-                            AddExcludeSize(node, pat, fileInfo.Length);
-                            if (!string.IsNullOrWhiteSpace(label) && !label.Equals(pat, StringComparison.OrdinalIgnoreCase))
-                                AddExcludeSize(node, label, fileInfo.Length);
+                            try
+                            {
+                                var fileInfo = new FileInfo(e);
+                                AddExcludeSize(node, pat, fileInfo.Length);
+                                if (!string.IsNullOrWhiteSpace(label) && !label.Equals(pat, StringComparison.OrdinalIgnoreCase))
+                                    AddExcludeSize(node, label, fileInfo.Length);
+                            }
+                            catch { /* Silently ignore file access errors */ }
                         }
-                        catch { /* Silently ignore file access errors */ }
                     }
                 }
 
@@ -235,7 +297,7 @@ internal sealed class TreeBuilder
         // keep if any visible children exist
         if (dir.Children.Count > 0) return true;
         // keep if directory has excluded files and user wants to see them
-        if (dir.ExcludedTypeCounts.Count > 0 && (_options.ShowAll || _options.ShowIgnored))
+        if (dir.ExcludedTypeCounts.Count > 0 && (_options.ShowAll || _options.ShowIgnored || _options.CountExcludes))
             return true;
         return false;
     }
